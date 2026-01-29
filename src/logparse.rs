@@ -6,8 +6,6 @@ use memchr::{memchr_iter, memmem};
 
 #[derive(Debug, PartialEq)]
 pub enum LogEvent {
-    TransactionStarted,
-    TransactionCompleted,
     Installed {
         package: String,
         version: String,
