@@ -38,11 +38,14 @@ pub enum ParseError {
 
     #[error("Invalid UTF-8 in log line")]
     InvalidUtf8(#[from] std::str::Utf8Error),
+
+    #[error("Missing transaction start")]
+    MissingTransaction,
 }
 
 pub fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> {
     let bytes = content.as_bytes();
-    let mut events: BTreeMap<i64, Vec<LogEvent>> = BTreeMap::new();
+    let mut transactions: BTreeMap<i64, Vec<LogEvent>> = BTreeMap::new();
 
     let alpm_finder = memmem::Finder::new(b"[ALPM] ");
     let tx_started = memmem::Finder::new(b"transaction started");
@@ -53,6 +56,8 @@ pub fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseErr
     let downgraded = memmem::Finder::new(b"downgraded ");
     let warning = memmem::Finder::new(b"warning: ");
 
+    let mut current_transaction: Option<(i64, Vec<LogEvent>)> = None;
+
     let mut line_start = 0;
     for line_end in memchr_iter(b'\n', bytes) {
         let line = &bytes[line_start..line_end];
@@ -62,33 +67,43 @@ pub fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseErr
             let timestamp = parse_timestamp(&line[..alpm_pos])?;
             let after_alpm = &line[alpm_pos + 7..];
 
-            let event = if tx_started.find(after_alpm).is_some() {
-                Some(LogEvent::TransactionStarted)
+            // check transaction boundaries
+            if tx_started.find(after_alpm).is_some() {
+                // new tx
+                current_transaction = Some((timestamp, Vec::new()));
             } else if tx_completed.find(after_alpm).is_some() {
-                Some(LogEvent::TransactionCompleted)
-            } else if warning.find(after_alpm).is_some() {
-                None // skip for now, but messes with other matchers
-            } else if let Some(pos) = upgraded.find(after_alpm) {
-                Some(parse_upgrade(&after_alpm[pos + 9..])?)
-            } else if let Some(pos) = installed.find(after_alpm) {
-                Some(parse_installed(&after_alpm[pos + 10..])?)
-            } else if let Some(pos) = removed.find(after_alpm) {
-                Some(parse_removed(&after_alpm[pos + 8..])?)
-            } else if let Some(pos) = downgraded.find(after_alpm) {
-                Some(parse_downgrade(&after_alpm[pos + 11..])?)
+                if let Some((tx_timestamp, events)) = current_transaction.take() {
+                    transactions.insert(tx_timestamp, events);
+                }
             } else {
-                None
-            };
+                let event = if warning.find(after_alpm).is_some() {
+                    None // skip for now, but messes with other matchers
+                } else if let Some(pos) = upgraded.find(after_alpm) {
+                    Some(parse_upgrade(&after_alpm[pos + 9..])?)
+                } else if let Some(pos) = installed.find(after_alpm) {
+                    Some(parse_installed(&after_alpm[pos + 10..])?)
+                } else if let Some(pos) = removed.find(after_alpm) {
+                    Some(parse_removed(&after_alpm[pos + 8..])?)
+                } else if let Some(pos) = downgraded.find(after_alpm) {
+                    Some(parse_downgrade(&after_alpm[pos + 11..])?)
+                } else {
+                    None
+                };
 
-            if let Some(event) = event {
-                events.entry(timestamp).or_default().push(event);
+                if let Some(event) = event {
+                    if let Some((_, events)) = &mut current_transaction {
+                        events.push(event);
+                    } else {
+                        return Err(ParseError::MissingTransaction);
+                    }
+                }
             }
         }
 
         line_start = line_end + 1;
     }
 
-    Ok(events)
+    Ok(transactions)
 }
 
 // pacman.log uses timestamps in the format: [2026-01-28T19:36:35-0800]
