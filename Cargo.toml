@@ -1,0 +1,9 @@
+[package]
+name = "puckrat"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.43", default-features = false, features = ["clock", "alloc", "std", "now"] }
+memchr = { version = "2.7.6", features = ["logging"] }
+thiserror = "2.0.18"
