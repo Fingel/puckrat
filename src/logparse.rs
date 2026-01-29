@@ -1,8 +1,8 @@
 /// Functions related to parsing pacman logs
 use std::collections::BTreeMap;
 
-use chrono::DateTime;
 use memchr::{memchr_iter, memmem};
+use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
 #[derive(Debug, PartialEq)]
 pub enum LogEvent {
@@ -117,8 +117,8 @@ fn parse_timestamp(bytes: &[u8]) -> Result<i64, ParseError> {
         .ok_or_else(|| ParseError::InvalidTimestamp(String::from_utf8_lossy(bytes).to_string()))?;
 
     let timestamp_str = std::str::from_utf8(&bytes[1..end])?;
-    DateTime::parse_from_str(timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
-        .map(|dt| dt.timestamp())
+    OffsetDateTime::parse(timestamp_str, &Iso8601::DEFAULT)
+        .map(|dt| dt.unix_timestamp())
         .map_err(|e| ParseError::InvalidTimestamp(format!("{}: {}", timestamp_str, e)))
 }
 
