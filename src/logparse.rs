@@ -1,6 +1,7 @@
 /// Functions related to parsing pacman logs
 use std::collections::BTreeMap;
 
+use log::debug;
 use memchr::{memchr_iter, memmem};
 use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
@@ -14,7 +15,7 @@ impl LogDB {
         let start = std::time::Instant::now();
         let transactions = parse_log(content)?;
         let duration = start.elapsed();
-        println!(
+        debug!(
             "Parsed {} transactions in {:?}",
             transactions.len(),
             duration
