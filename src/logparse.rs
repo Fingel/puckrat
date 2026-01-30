@@ -4,6 +4,25 @@ use std::collections::BTreeMap;
 use memchr::{memchr_iter, memmem};
 use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
+#[derive(Debug, PartialEq, Default)]
+pub struct LogDB {
+    pub transactions: BTreeMap<i64, Vec<LogEvent>>,
+}
+
+impl LogDB {
+    pub fn new(content: &str) -> Result<Self, ParseError> {
+        let start = std::time::Instant::now();
+        let transactions = parse_log(content)?;
+        let duration = start.elapsed();
+        println!(
+            "Parsed {} transactions in {:?}",
+            transactions.len(),
+            duration
+        );
+        Ok(LogDB { transactions })
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum LogEvent {
     Installed {
@@ -41,7 +60,7 @@ pub enum ParseError {
     MissingTransaction,
 }
 
-pub fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> {
+fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> {
     let bytes = content.as_bytes();
     let mut transactions: BTreeMap<i64, Vec<LogEvent>> = BTreeMap::new();
 
