@@ -1,4 +1,4 @@
-use crate::logparse::{LogDB, ParseError};
+use crate::logparse::{LogDB, LogEvent, ParseError};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub enum RunningState {
@@ -23,5 +23,9 @@ impl Model {
 
     pub fn transaction_count(&self) -> usize {
         self.logs.transactions.len()
+    }
+
+    pub fn transactions(&self) -> impl Iterator<Item = (&i64, &Vec<LogEvent>)> {
+        self.logs.transactions.iter().rev()
     }
 }

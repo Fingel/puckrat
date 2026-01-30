@@ -1,4 +1,5 @@
 mod main_screen;
+mod transactions;
 
 use crate::model::Model;
 use ratatui::Frame;

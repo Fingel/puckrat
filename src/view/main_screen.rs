@@ -1,4 +1,3 @@
-use crate::model::Model;
 use ratatui::{
     Frame,
     prelude::*,
@@ -6,20 +5,20 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
+use crate::{model::Model, view::transactions::render_transactions};
+
 pub fn render(model: &Model, frame: &mut Frame) {
-    frame.render_widget(render_main(model), frame.area());
+    let layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(frame.area());
+    frame.render_widget(render_transactions(model), layout[0]);
+    frame.render_widget(render_main(model), layout[1]);
 }
 
 fn render_main(model: &Model) -> Paragraph<'_> {
     let title = Line::from(" Puckman ".bold());
-    let instructions = Line::from(vec![
-        " Down ".into(),
-        "<j>".blue().bold(),
-        " Up ".into(),
-        "<k>".blue().bold(),
-        " Quit ".into(),
-        "<Q> ".blue().bold(),
-    ]);
+    let instructions = Line::from(vec![" Quit ".into(), "<Q> ".blue().bold()]);
     let block = Block::bordered()
         .title(title.centered())
         .title_bottom(instructions.centered())
@@ -30,6 +29,5 @@ fn render_main(model: &Model) -> Paragraph<'_> {
         tx_cnt.to_string().into(),
         " Transactions".into(),
     ])]);
-
     Paragraph::new(counter_text).centered().block(block)
 }
