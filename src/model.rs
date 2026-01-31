@@ -18,8 +18,14 @@ pub struct Model {
 
 impl Model {
     pub fn new(content: &str) -> Result<Self, ParseError> {
+        let logs = LogDB::new(content)?;
+        let mut list_state = ListState::default();
+        // List state needs be initialized with a length in order to select an item on
+        // initial render
+        list_state.select(Some(logs.transactions.len().saturating_sub(1)));
         Ok(Self {
-            logs: LogDB::new(content)?,
+            logs,
+            list_state,
             ..Default::default()
         })
     }

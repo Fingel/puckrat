@@ -1,13 +1,14 @@
-use crate::logparse::{LogDB, LogEvent};
 use ratatui::{
     prelude::*,
-    style::palette::tailwind::ORANGE,
+    style::palette::tailwind::SLATE,
     symbols::border,
     widgets::{Block, List, ListItem},
 };
 use time::macros::format_description;
 
-const SELECTED_STYLE: Style = Style::new().bg(ORANGE.c800).add_modifier(Modifier::BOLD);
+use crate::logparse::{LogDB, LogEvent};
+
+const SELECTED_STYLE: Style = Style::new().bg(SLATE.c600).add_modifier(Modifier::BOLD);
 
 pub fn render_transactions(db: &LogDB) -> List<'_> {
     let title = Line::from(" Transactions ".bold());
@@ -24,15 +25,18 @@ pub fn render_transactions(db: &LogDB) -> List<'_> {
     let items: Vec<ListItem> = db
         .transactions
         .iter()
-        .rev()
-        .flat_map(|(timestamp, events)| {
-            let mut items = vec![ListItem::new(
-                Line::from(render_timestamp(*timestamp)).bold(),
-            )];
-            items.extend(events.iter().map(|event| {
-                ListItem::new(Line::from(format!("  {}", render_event_summary(event))))
-            }));
-            items
+        .map(|(logkey, event)| {
+            let event_summary = Line::from(render_event_summary(event));
+            // First item in transaction has a date above it
+            let items = if logkey.offset == 0 {
+                vec![
+                    Line::from(render_timestamp(logkey.timestamp)).bold(),
+                    event_summary,
+                ]
+            } else {
+                vec![event_summary]
+            };
+            ListItem::from(items)
         })
         .collect();
 

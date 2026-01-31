@@ -1,4 +1,4 @@
-/// Functions related to parsing pacman logs
+//! Functions related to parsing pacman logs
 use std::collections::BTreeMap;
 
 use log::debug;
@@ -7,7 +7,7 @@ use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct LogDB {
-    pub transactions: BTreeMap<i64, Vec<LogEvent>>,
+    pub transactions: BTreeMap<LogKey, LogEvent>,
 }
 
 impl LogDB {
@@ -21,6 +21,26 @@ impl LogDB {
             duration
         );
         Ok(LogDB { transactions })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct LogKey {
+    pub timestamp: i64,
+    pub offset: usize,
+}
+
+impl Ord for LogKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.timestamp
+            .cmp(&other.timestamp)
+            .then(self.offset.cmp(&other.offset))
+    }
+}
+
+impl PartialOrd for LogKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -61,9 +81,9 @@ pub enum ParseError {
     MissingTransaction,
 }
 
-fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> {
+fn parse_log(content: &str) -> Result<BTreeMap<LogKey, LogEvent>, ParseError> {
     let bytes = content.as_bytes();
-    let mut transactions: BTreeMap<i64, Vec<LogEvent>> = BTreeMap::new();
+    let mut transactions: BTreeMap<LogKey, LogEvent> = BTreeMap::new();
 
     let alpm_finder = memmem::Finder::new(b"[ALPM] ");
     let tx_started = memmem::Finder::new(b"transaction started");
@@ -74,7 +94,7 @@ fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> 
     let downgraded = memmem::Finder::new(b"downgraded ");
     let warning = memmem::Finder::new(b"warning: ");
 
-    let mut current_transaction: Option<(i64, Vec<LogEvent>)> = None;
+    let mut current_transaction: Option<LogKey> = None;
 
     let mut line_start = 0;
     for line_end in memchr_iter(b'\n', bytes) {
@@ -88,11 +108,12 @@ fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> 
             // check transaction boundaries
             if tx_started.find(after_alpm).is_some() {
                 // new tx
-                current_transaction = Some((timestamp, Vec::new()));
+                current_transaction = Some(LogKey {
+                    timestamp,
+                    offset: 0,
+                });
             } else if tx_completed.find(after_alpm).is_some() {
-                if let Some((tx_timestamp, events)) = current_transaction.take() {
-                    transactions.insert(tx_timestamp, events);
-                }
+                current_transaction = None;
             } else {
                 let event = if warning.find(after_alpm).is_some() {
                     None // skip for now, but messes with other matchers
@@ -109,8 +130,9 @@ fn parse_log(content: &str) -> Result<BTreeMap<i64, Vec<LogEvent>>, ParseError> 
                 };
 
                 if let Some(event) = event {
-                    if let Some((_, events)) = &mut current_transaction {
-                        events.push(event);
+                    if let Some(log_key) = &mut current_transaction {
+                        transactions.insert(log_key.clone(), event);
+                        log_key.offset += 1;
                     } else {
                         return Err(ParseError::MissingTransaction);
                     }
