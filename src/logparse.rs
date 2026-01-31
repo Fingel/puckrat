@@ -62,6 +62,17 @@ pub enum LogEvent {
     },
 }
 
+impl LogEvent {
+    pub fn package(&self) -> &str {
+        match self {
+            LogEvent::Installed { package, .. }
+            | LogEvent::Removed { package, .. }
+            | LogEvent::Upgraded { package, .. }
+            | LogEvent::Downgraded { package, .. } => package,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum ParseError {
     #[error("Failed to parse timestamp: {0}")]

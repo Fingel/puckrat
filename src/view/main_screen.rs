@@ -18,14 +18,19 @@ pub fn render(model: &mut Model, frame: &mut Frame) {
 }
 
 fn render_main(model: &Model) -> Paragraph<'_> {
-    let title = Line::from(" Puckman ".bold());
+    let event = model.selected_event();
+    let package_name = if let Some(event) = event {
+        event.1.package()
+    } else {
+        "Puckman"
+    };
+    let title = Line::from(format!(" {} ", package_name).bold());
     let instructions = Line::from(vec![" Quit ".into(), "<Q> ".blue().bold()]);
     let block = Block::bordered()
         .title(title.centered())
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let event = model.selected_event();
     if let Some((_key, event)) = event {
         let package_text = Text::from(Line::from(format!("{:?}", event)));
         Paragraph::new(package_text).centered().block(block)
