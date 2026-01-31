@@ -25,10 +25,12 @@ fn render_main(model: &Model) -> Paragraph<'_> {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let tx_cnt = model.transaction_count();
-    let counter_text = Text::from(vec![Line::from(vec![
-        tx_cnt.to_string().into(),
-        " Transactions".into(),
-    ])]);
-    Paragraph::new(counter_text).centered().block(block)
+    let event = model.selected_event();
+    if let Some((_key, event)) = event {
+        let package_text = Text::from(Line::from(format!("{:?}", event)));
+        Paragraph::new(package_text).centered().block(block)
+    } else {
+        let package_text = Text::from(Line::from("No package selected"));
+        Paragraph::new(package_text).centered().block(block)
+    }
 }

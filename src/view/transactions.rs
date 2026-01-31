@@ -23,7 +23,7 @@ pub fn render_transactions(db: &LogDB) -> List<'_> {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
     let items: Vec<ListItem> = db
-        .transactions
+        .events
         .iter()
         .map(|(logkey, event)| {
             let event_summary = Line::from(render_event_summary(event));

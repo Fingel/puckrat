@@ -27,10 +27,10 @@ fn process_message(model: &mut Model, msg: Message) {
 fn update(model: &mut Model, msg: Message) -> Option<Message> {
     match msg {
         Message::MoveUp => {
-            model.list_state.select_previous();
+            model.select_previous();
         }
         Message::MoveDown => {
-            model.list_state.select_next();
+            model.select_next();
         }
         Message::Quit => {
             // You can handle cleanup and exit here

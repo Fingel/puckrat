@@ -7,20 +7,16 @@ use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct LogDB {
-    pub transactions: BTreeMap<LogKey, LogEvent>,
+    pub events: BTreeMap<LogKey, LogEvent>,
 }
 
 impl LogDB {
     pub fn new(content: &str) -> Result<Self, ParseError> {
         let start = std::time::Instant::now();
-        let transactions = parse_log(content)?;
+        let events = parse_log(content)?;
         let duration = start.elapsed();
-        debug!(
-            "Parsed {} transactions in {:?}",
-            transactions.len(),
-            duration
-        );
-        Ok(LogDB { transactions })
+        debug!("Parsed {} events in {:?}", events.len(), duration);
+        Ok(LogDB { events })
     }
 }
 
