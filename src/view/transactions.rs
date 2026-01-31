@@ -1,15 +1,15 @@
-use crate::{logparse::LogEvent, model::Model};
+use crate::logparse::{LogDB, LogEvent};
 use ratatui::{
     prelude::*,
-    style::palette::tailwind::SLATE,
+    style::palette::tailwind::ORANGE,
     symbols::border,
     widgets::{Block, List, ListItem},
 };
 use time::macros::format_description;
 
-const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+const SELECTED_STYLE: Style = Style::new().bg(ORANGE.c800).add_modifier(Modifier::BOLD);
 
-pub fn render_transactions(model: &Model) -> List<'_> {
+pub fn render_transactions(db: &LogDB) -> List<'_> {
     let title = Line::from(" Transactions ".bold());
     let instructions = Line::from(vec![
         " Down ".into(),
@@ -21,8 +21,10 @@ pub fn render_transactions(model: &Model) -> List<'_> {
         .title(title.centered())
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
-    let items: Vec<ListItem> = model
-        .transactions()
+    let items: Vec<ListItem> = db
+        .transactions
+        .iter()
+        .rev()
         .flat_map(|(timestamp, events)| {
             let mut items = vec![ListItem::new(
                 Line::from(render_timestamp(*timestamp)).bold(),

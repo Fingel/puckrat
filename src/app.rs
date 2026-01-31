@@ -8,7 +8,7 @@ use crate::view;
 
 pub fn run(mut model: Model, terminal: &mut DefaultTerminal) -> io::Result<()> {
     while model.running_state != RunningState::Done {
-        terminal.draw(|frame| view::view(&model, frame))?;
+        terminal.draw(|frame| view::view(&mut model, frame))?;
 
         if let Some(msg) = event::handle_event(&model)? {
             process_message(&mut model, msg);
@@ -27,10 +27,10 @@ fn process_message(model: &mut Model, msg: Message) {
 fn update(model: &mut Model, msg: Message) -> Option<Message> {
     match msg {
         Message::MoveUp => {
-            dbg!("Move UP");
+            model.list_state.select_previous();
         }
         Message::MoveDown => {
-            dbg!("Move DOWN");
+            model.list_state.select_next();
         }
         Message::Quit => {
             // You can handle cleanup and exit here

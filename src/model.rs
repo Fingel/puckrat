@@ -1,4 +1,6 @@
-use crate::logparse::{LogDB, LogEvent, ParseError};
+use ratatui::widgets::ListState;
+
+use crate::logparse::{LogDB, ParseError};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub enum RunningState {
@@ -11,6 +13,7 @@ pub enum RunningState {
 pub struct Model {
     pub running_state: RunningState,
     pub logs: LogDB,
+    pub list_state: ListState,
 }
 
 impl Model {
@@ -23,9 +26,5 @@ impl Model {
 
     pub fn transaction_count(&self) -> usize {
         self.logs.transactions.len()
-    }
-
-    pub fn transactions(&self) -> impl Iterator<Item = (&i64, &Vec<LogEvent>)> {
-        self.logs.transactions.iter().rev()
     }
 }

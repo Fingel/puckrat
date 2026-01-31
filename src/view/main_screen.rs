@@ -7,12 +7,13 @@ use ratatui::{
 
 use crate::{model::Model, view::transactions::render_transactions};
 
-pub fn render(model: &Model, frame: &mut Frame) {
+pub fn render(model: &mut Model, frame: &mut Frame) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(frame.area());
-    frame.render_widget(render_transactions(model), layout[0]);
+    let tx_widget = render_transactions(&model.logs);
+    frame.render_stateful_widget(tx_widget, layout[0], &mut model.list_state);
     frame.render_widget(render_main(model), layout[1]);
 }
 
