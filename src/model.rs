@@ -1,5 +1,6 @@
 use ratatui::widgets::ListState;
 
+use crate::alpmutil::AlpmService;
 use crate::logparse::{LogDB, LogEvent, LogKey, ParseError};
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -9,8 +10,9 @@ pub enum RunningState {
     Done,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Model {
+    pub alpm_service: AlpmService,
     pub running_state: RunningState,
     pub logs: LogDB,
     pub list_state: ListState,
@@ -18,18 +20,19 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(content: &str) -> Result<Self, ParseError> {
-        let logs = LogDB::new(content)?;
+    pub fn new(alpm_service: AlpmService, log: &str) -> Result<Self, ParseError> {
+        let logs = LogDB::new(log)?;
         let mut list_state = ListState::default();
         let initial_event = logs.events.len().saturating_sub(1);
         // List state needs be initialized with a length in order to select an item on
         // initial render
         list_state.select(Some(initial_event));
         Ok(Self {
+            running_state: RunningState::Running,
+            alpm_service,
             logs,
             list_state,
             selected_event: initial_event,
-            ..Default::default()
         })
     }
 

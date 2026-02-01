@@ -1,4 +1,5 @@
 mod main_screen;
+mod pkginfo;
 mod transactions;
 
 use crate::model::Model;
